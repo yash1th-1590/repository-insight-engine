@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Archaeology</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="brand-icon">CA</div>
+                <span class="brand-text">Code Archaeology</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-link active" onclick="switchTab('analyzer')">Analyzer</button>
+                <button class="nav-link" onclick="switchTab('documentation')">Documentation</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Analyzer Tab -->
+        <div id="analyzer-tab" class="tab-content active">
+            <div class="hero-section">
+                <span class="hero-badge">Beta</span>
+                <h1 class="hero-title">Understand Why Code Exists</h1>
+                <p class="hero-subtitle">
+                    Enter a GitHub repository URL to uncover engineering decisions, 
+                    architectural trade-offs, and historical context behind the code.
+                </p>
+                
+                <div class="search-container">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 21L15 15M17 9C17 13.4183 13.4183 17 9 17C4.58172 17 1 13.4183 1 9C1 4.58172 4.58172 1 9 1C13.4183 1 17 4.58172 17 9Z"/>
+                        </svg>
+                        <input type="text" id="repoInput" 
+                               placeholder="https://github.com/owner/repository" 
+                               class="search-input">
+                    </div>
+                    <button onclick="analyzeRepo()" id="analyzeBtn" class="analyze-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+                            <path d="M2 17L12 22L22 17"/>
+                            <path d="M2 12L12 17L22 12"/>
+                        </svg>
+                        Analyze
+                    </button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading-state hidden">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Scanning repository history...</p>
+            </div>
+
+            <div id="results" class="results-container hidden">
+                <div id="metadata" class="metadata-section"></div>
+                <div id="decisions" class="decisions-section"></div>
+<div id="overall-analysis" class="overall-analysis-section hidden"></div>
+                <div id="commits" class="commits-section"></div>
+            </div>
+        </div>
+
+        <!-- Documentation Tab -->
+        <div id="documentation-tab" class="tab-content hidden">
+            <div class="doc-container">
+                <div class="doc-header">
+                    <h1>Documentation Center</h1>
+                    <p>Manage and generate PDF reports for analyzed repositories</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="doc-empty" class="doc-empty">
+                    <div class="empty-icon">📄</div>
+                    <h3>No Repositories Analyzed</h3>
+                    <p>Go to the Analyzer tab and analyze a repository to get started.</p>
+                </div>
+
+                <!-- Repository List View -->
+                <div id="doc-list-view" class="doc-list-view hidden">
+                    <div id="doc-list" class="doc-list"></div>
+                </div>
+
+                <!-- Preview View -->
+                <div id="doc-preview-view" class="doc-preview-view hidden">
+                    <div class="preview-controls">
+                        <button onclick="closePreview()" class="back-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                            Back to List
+                        </button>
+                        <button onclick="generatePDF()" class="download-btn" id="downloadBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 15V3M12 15L9 12M12 15L15 12"/>
+                                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+                            </svg>
+                            Download PDF
+                        </button>
+                    </div>
+                    <div class="preview-info-bar">
+                        <span class="preview-repo-name" id="preview-repo-name"></span>
+                        <span class="preview-repo-url" id="preview-repo-url"></span>
+                    </div>
+                    <div id="doc-content" class="doc-content"></div>
+                </div>
+
+                <div id="pdf-loading" class="pdf-loading hidden">
+                    <div class="loading-spinner"></div>
+                    <p>Generating PDF document...</p>
+                    <span class="loading-sub">Please wait</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <span>Code Archaeology</span>
+            <span>Built with Python, Flask &amp; Google Gemini</span>
+            <span>Open Source</span>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
