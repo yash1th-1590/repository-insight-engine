@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Archaeology</title>
+    <title>Repository Insight Engine</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -11,8 +11,8 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-brand">
-                <div class="brand-icon">CA</div>
-                <span class="brand-text">Code Archaeology</span>
+                <div class="brand-icon">RIE</div>
+                <span class="brand-text">Repository Insight Engine</span>
             </div>
             <div class="nav-links">
                 <button class="nav-link active" onclick="switchTab('analyzer')">Analyzer</button>
@@ -22,10 +22,8 @@
     </nav>
 
     <main class="main-content">
-        <!-- Analyzer Tab -->
         <div id="analyzer-tab" class="tab-content active">
             <div class="hero-section">
-                <span class="hero-badge">Beta</span>
                 <h1 class="hero-title">Understand Why Code Exists</h1>
                 <p class="hero-subtitle">
                     Enter a GitHub repository URL to uncover engineering decisions, 
@@ -59,13 +57,12 @@
 
             <div id="results" class="results-container hidden">
                 <div id="metadata" class="metadata-section"></div>
+                <div id="overall-analysis" class="overall-analysis-section hidden"></div>
                 <div id="decisions" class="decisions-section"></div>
-<div id="overall-analysis" class="overall-analysis-section hidden"></div>
                 <div id="commits" class="commits-section"></div>
             </div>
         </div>
 
-        <!-- Documentation Tab -->
         <div id="documentation-tab" class="tab-content hidden">
             <div class="doc-container">
                 <div class="doc-header">
@@ -73,19 +70,16 @@
                     <p>Manage and generate PDF reports for analyzed repositories</p>
                 </div>
 
-                <!-- Empty State -->
                 <div id="doc-empty" class="doc-empty">
                     <div class="empty-icon">📄</div>
                     <h3>No Repositories Analyzed</h3>
                     <p>Go to the Analyzer tab and analyze a repository to get started.</p>
                 </div>
 
-                <!-- Repository List View -->
                 <div id="doc-list-view" class="doc-list-view hidden">
                     <div id="doc-list" class="doc-list"></div>
                 </div>
 
-                <!-- Preview View -->
                 <div id="doc-preview-view" class="doc-preview-view hidden">
                     <div class="preview-controls">
                         <button onclick="closePreview()" class="back-btn">
@@ -120,8 +114,8 @@
 
     <footer class="footer">
         <div class="footer-content">
-            <span>Code Archaeology</span>
-            <span>Built with Python, Flask &amp; Google Gemini</span>
+            <span>Repository Insight Engine</span>
+            <span>Built with Python, Flask, Gemini &amp; Groq</span>
             <span>Open Source</span>
         </div>
     </footer>

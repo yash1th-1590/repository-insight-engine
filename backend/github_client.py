@@ -6,7 +6,7 @@ class GitHubClient:
         self.token = Config.GITHUB_TOKEN
         self.base_url = Config.GITHUB_API_BASE
         self.headers = {}
-        if self.token and self.token != 'N/A':
+        if self.token and self.token != '':
             self.headers = {'Authorization': f'token {self.token}'}
     
     def extract_repo_info(self, repo_url):

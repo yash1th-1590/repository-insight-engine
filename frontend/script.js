@@ -95,6 +95,38 @@ async function analyzeRepo() {
     }
 }
 
+function formatOverallAnalysis(text) {
+    if (!text) return '';
+    
+    let formatted = text;
+    
+    formatted = formatted.replace(/^#+ /gm, '');
+    
+    formatted = formatted.replace(/\[([^\]]+)\]/g, '<h4 class="analysis-heading">$1</h4>');
+    
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    formatted = formatted.replace(/^\* (.*)$/gm, '<li>$1</li>');
+    formatted = formatted.replace(/^- (.*)$/gm, '<li>$1</li>');
+    
+    formatted = formatted.replace(/^(\d+)\. (.*)$/gm, '<li>$1. $2</li>');
+    
+    if (formatted.includes('<li>')) {
+        formatted = formatted.replace(/<li>/g, '<ul class="analysis-list"><li>');
+        formatted = formatted.replace(/<\/li>/g, '</li></ul>');
+        formatted = formatted.replace(/<\/ul><ul>/g, '');
+    }
+    
+    formatted = formatted.replace(/\n\n/g, '</p><p>');
+    formatted = formatted.replace(/\n/g, ' ');
+    
+    if (!formatted.startsWith('<')) {
+        formatted = '<p>' + formatted + '</p>';
+    }
+    
+    return formatted;
+}
+
 function renderResults(data) {
     const metadata = data.metadata || {};
     
@@ -145,7 +177,6 @@ function renderResults(data) {
         decisionsHtml = decisions.map(d => `
             <div class="decision-card">
                 <h3>${safeString(d.file, 'Unknown file')}</h3>
-                <div class="file-path">${safeString(d.path, 'Unknown path')}</div>
                 <div class="analysis">${safeString(d.analysis, 'No analysis available')}</div>
                 <div class="confidence-badge">Confidence: ${safeString(d.confidence, 'Medium')} | Related Commits: ${d.related_commits || 0}</div>
             </div>
@@ -187,26 +218,6 @@ function renderResults(data) {
         <h2>Recent Commits</h2>
         ${commitsHtml}
     `;
-}
-
-function formatOverallAnalysis(text) {
-    if (!text) return '';
-    
-    let formatted = text;
-    
-    formatted = formatted.replace(/\*\*/g, '');
-    formatted = formatted.replace(/^# (.*)$/gm, '<h4>$1</h4>');
-    formatted = formatted.replace(/^## (.*)$/gm, '<h4>$1</h4>');
-    formatted = formatted.replace(/^### (.*)$/gm, '<h4>$1</h4>');
-    formatted = formatted.replace(/^- (.*)$/gm, '<li>$1</li>');
-    formatted = formatted.replace(/\n\n/g, '</p><p>');
-    
-    if (formatted.includes('<li>')) {
-        formatted = formatted.replace(/<li>/g, '<ul><li>');
-        formatted = formatted.replace(/<\/li>/g, '</li></ul>');
-    }
-    
-    return `<p>${formatted}</p>`;
 }
 
 function renderRepositoryList() {
@@ -278,11 +289,10 @@ function generatePDFContent(data, repoUrl) {
     let decisionsHtml = '';
     if (decisions.length > 0) {
         decisionsHtml = decisions.map(d => `
-            <div class="pdf-decision">
-                <div class="pdf-decision-title">${safeString(d.file, 'Unknown file')}</div>
-                <div class="pdf-decision-path">${safeString(d.path, 'Unknown path')}</div>
-                <div class="pdf-decision-text">${safeString(d.analysis, 'No analysis available')}</div>
-                <div style="margin-top:6px;font-size:12px;color:#484f58;">Confidence: ${safeString(d.confidence, 'Medium')}</div>
+            <div class="pdf-decision" style="margin-bottom:8px;padding:12px 16px;background:#f6f8fa;border-radius:6px;border-left:4px solid #d29922;">
+                <div class="pdf-decision-title" style="font-size:15px;font-weight:600;color:#0d1117;margin-bottom:4px;">${safeString(d.file, 'Unknown file')}</div>
+                <div class="pdf-decision-text" style="font-size:13px;line-height:1.5;color:#24292e;">${safeString(d.analysis, 'No analysis available')}</div>
+                <div style="margin-top:4px;font-size:12px;color:#484f58;">Confidence: ${safeString(d.confidence, 'Medium')}</div>
             </div>
         `).join('');
     } else {
@@ -293,11 +303,11 @@ function generatePDFContent(data, repoUrl) {
     if (commits.length > 0) {
         const commitsToShow = commits.slice(0, 15);
         commitsHtml = commitsToShow.map(c => `
-            <div class="pdf-commit">
-                <span class="pdf-commit-sha">${safeString(c.sha, 'N/A')}</span>
-                <span class="pdf-commit-message">${safeString(c.message, 'No message')}</span>
-                <span class="pdf-commit-intent">${safeString(c.intent, 'maintenance')}</span>
-                <span class="pdf-commit-author">${safeString(c.author, 'Unknown')}</span>
+            <div class="pdf-commit" style="display:flex;align-items:center;gap:12px;padding:6px 12px;border-bottom:1px solid #e6edf3;">
+                <span class="pdf-commit-sha" style="font-family:'Courier New',monospace;font-size:12px;color:#58a6ff;font-weight:600;min-width:80px;">${safeString(c.sha, 'N/A')}</span>
+                <span class="pdf-commit-message" style="flex:1;font-size:13px;color:#24292e;">${safeString(c.message, 'No message')}</span>
+                <span class="pdf-commit-intent" style="font-size:11px;color:#484f58;background:#e6edf3;padding:2px 12px;border-radius:12px;">${safeString(c.intent, 'maintenance')}</span>
+                <span class="pdf-commit-author" style="font-size:12px;color:#484f58;">${safeString(c.author, 'Unknown')}</span>
             </div>
         `).join('');
     } else {
@@ -306,11 +316,27 @@ function generatePDFContent(data, repoUrl) {
     
     let overallHtml = '';
     if (overallAnalysis) {
-        const formatted = overallAnalysis.replace(/\*\*/g, '').replace(/\n/g, '<br>');
+        let formatted = overallAnalysis;
+        formatted = formatted.replace(/^#+ /gm, '');
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/\[([^\]]+)\]/g, '<strong>$1</strong>');
+        formatted = formatted.replace(/^\* (.*)$/gm, '<li>$1</li>');
+        formatted = formatted.replace(/^- (.*)$/gm, '<li>$1</li>');
+        
+        if (formatted.includes('<li>')) {
+            formatted = formatted.replace(/<li>/g, '<ul style="margin:4px 0 8px 0;padding-left:20px;"><li>');
+            formatted = formatted.replace(/<\/li>/g, '</li></ul>');
+            formatted = formatted.replace(/<\/ul><ul>/g, '');
+        }
+        
+        formatted = formatted.replace(/^(\d+)\. (.*)$/gm, '<li>$1. $2</li>');
+        formatted = formatted.replace(/\n\n/g, '<br>');
+        formatted = formatted.replace(/\n/g, ' ');
+        
         overallHtml = `
-            <div class="pdf-section">
-                <h2 class="pdf-section-title">Overall Analysis</h2>
-                <div style="font-size:13px;line-height:1.8;color:#24292e;">
+            <div class="pdf-section" style="margin-top:12px;">
+                <h2 class="pdf-section-title" style="font-size:16px;font-weight:600;color:#0d1117;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e6edf3;">Overall Analysis</h2>
+                <div style="font-size:13px;line-height:1.5;color:#24292e;">
                     ${formatted}
                 </div>
             </div>
@@ -318,70 +344,70 @@ function generatePDFContent(data, repoUrl) {
     }
     
     return `
-        <div class="pdf-document" id="pdf-content">
-            <h1 class="pdf-title">Code Archaeology Analysis Report</h1>
-            <div class="pdf-subtitle">Repository: ${safeString(metadata.name, 'Unknown')}</div>
-            <div class="pdf-subtitle">URL: ${repoUrl}</div>
-            <div class="pdf-subtitle">Generated: ${new Date().toLocaleString()}</div>
+        <div class="pdf-document" style="font-family:'Inter','Segoe UI',sans-serif;color:#0d1117;background:white;padding:32px;max-width:900px;margin:0 auto;">
+            <h1 style="font-size:24px;font-weight:700;color:#0d1117;margin-bottom:4px;">Repository Insight Engine Analysis Report</h1>
+            <div style="font-size:14px;color:#484f58;margin-bottom:2px;">Repository: ${safeString(metadata.name, 'Unknown')}</div>
+            <div style="font-size:14px;color:#484f58;margin-bottom:2px;">URL: ${repoUrl}</div>
+            <div style="font-size:14px;color:#484f58;margin-bottom:16px;">Generated: ${new Date().toLocaleString()}</div>
             
-            <div class="pdf-section">
-                <h2 class="pdf-section-title">Repository Overview</h2>
-                <div class="pdf-meta">
-                    <div class="pdf-meta-item">
-                        <div class="pdf-meta-label">Repository</div>
-                        <div class="pdf-meta-value">${safeString(metadata.name, 'Unknown')}</div>
+            <div class="pdf-section" style="margin-top:12px;">
+                <h2 class="pdf-section-title" style="font-size:16px;font-weight:600;color:#0d1117;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e6edf3;">Repository Overview</h2>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#f6f8fa;padding:12px;border-radius:6px;">
+                    <div style="text-align:center;">
+                        <div style="font-size:10px;text-transform:uppercase;color:#484f58;font-weight:500;letter-spacing:0.3px;">Repository</div>
+                        <div style="font-size:14px;font-weight:600;color:#0d1117;margin-top:2px;">${safeString(metadata.name, 'Unknown')}</div>
                     </div>
-                    <div class="pdf-meta-item">
-                        <div class="pdf-meta-label">Stars</div>
-                        <div class="pdf-meta-value">${metadata.stargazers_count || 0}</div>
+                    <div style="text-align:center;">
+                        <div style="font-size:10px;text-transform:uppercase;color:#484f58;font-weight:500;letter-spacing:0.3px;">Stars</div>
+                        <div style="font-size:14px;font-weight:600;color:#0d1117;margin-top:2px;">${metadata.stargazers_count || 0}</div>
                     </div>
-                    <div class="pdf-meta-item">
-                        <div class="pdf-meta-label">Language</div>
-                        <div class="pdf-meta-value">${safeString(metadata.language, 'N/A')}</div>
+                    <div style="text-align:center;">
+                        <div style="font-size:10px;text-transform:uppercase;color:#484f58;font-weight:500;letter-spacing:0.3px;">Language</div>
+                        <div style="font-size:14px;font-weight:600;color:#0d1117;margin-top:2px;">${safeString(metadata.language, 'N/A')}</div>
                     </div>
-                    <div class="pdf-meta-item">
-                        <div class="pdf-meta-label">Description</div>
-                        <div class="pdf-meta-value" style="font-size:14px;">${safeString(metadata.description, 'No description')}</div>
+                    <div style="text-align:center;">
+                        <div style="font-size:10px;text-transform:uppercase;color:#484f58;font-weight:500;letter-spacing:0.3px;">Description</div>
+                        <div style="font-size:13px;font-weight:600;color:#0d1117;margin-top:2px;">${safeString(metadata.description, 'No description')}</div>
                     </div>
                 </div>
             </div>
             
             ${overallHtml}
             
-            <div class="pdf-section">
-                <h2 class="pdf-section-title">Reconstructed Decisions</h2>
+            <div class="pdf-section" style="margin-top:12px;">
+                <h2 class="pdf-section-title" style="font-size:16px;font-weight:600;color:#0d1117;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e6edf3;">Reconstructed Decisions</h2>
                 ${decisionsHtml}
             </div>
             
-            <div class="pdf-section">
-                <h2 class="pdf-section-title">Recent Commits</h2>
+            <div class="pdf-section" style="margin-top:12px;">
+                <h2 class="pdf-section-title" style="font-size:16px;font-weight:600;color:#0d1117;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e6edf3;">Recent Commits</h2>
                 ${commitsHtml}
             </div>
             
-            <div class="pdf-section">
-                <h2 class="pdf-section-title">Analysis Summary</h2>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                    <div style="background:#f6f8fa;padding:12px 16px;border-radius:6px;">
-                        <div style="font-size:12px;color:#484f58;">Total Commits</div>
-                        <div style="font-size:16px;font-weight:600;color:#0d1117;">${commits.length}</div>
+            <div class="pdf-section" style="margin-top:12px;">
+                <h2 class="pdf-section-title" style="font-size:16px;font-weight:600;color:#0d1117;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #e6edf3;">Analysis Summary</h2>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="background:#f6f8fa;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:11px;color:#484f58;">Total Commits</div>
+                        <div style="font-size:15px;font-weight:600;color:#0d1117;">${commits.length}</div>
                     </div>
-                    <div style="background:#f6f8fa;padding:12px 16px;border-radius:6px;">
-                        <div style="font-size:12px;color:#484f58;">Key Files</div>
-                        <div style="font-size:16px;font-weight:600;color:#0d1117;">${decisions.length}</div>
+                    <div style="background:#f6f8fa;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:11px;color:#484f58;">Key Files</div>
+                        <div style="font-size:15px;font-weight:600;color:#0d1117;">${decisions.length}</div>
                     </div>
-                    <div style="background:#f6f8fa;padding:12px 16px;border-radius:6px;">
-                        <div style="font-size:12px;color:#484f58;">Primary Language</div>
-                        <div style="font-size:16px;font-weight:600;color:#0d1117;">${safeString(metadata.language, 'N/A')}</div>
+                    <div style="background:#f6f8fa;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:11px;color:#484f58;">Primary Language</div>
+                        <div style="font-size:15px;font-weight:600;color:#0d1117;">${safeString(metadata.language, 'N/A')}</div>
                     </div>
-                    <div style="background:#f6f8fa;padding:12px 16px;border-radius:6px;">
-                        <div style="font-size:12px;color:#484f58;">Analysis Date</div>
-                        <div style="font-size:16px;font-weight:600;color:#0d1117;">${new Date().toLocaleDateString()}</div>
+                    <div style="background:#f6f8fa;padding:10px 14px;border-radius:6px;">
+                        <div style="font-size:11px;color:#484f58;">Analysis Date</div>
+                        <div style="font-size:15px;font-weight:600;color:#0d1117;">${new Date().toLocaleDateString()}</div>
                     </div>
                 </div>
             </div>
             
-            <div class="pdf-footer">
-                Generated by Code Archaeology
+            <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e6edf3;font-size:12px;color:#484f58;text-align:center;">
+                Generated by Repository Insight Engine
             </div>
         </div>
     `;
@@ -410,8 +436,8 @@ function generatePDF() {
     downloadBtn.innerHTML = 'Generating...';
     
     const opt = {
-        margin: [12, 12, 12, 12],
-        filename: `code-archaeology-${repo.name || 'report'}.pdf`,
+        margin: [10, 10, 10, 10],
+        filename: `repository-insight-engine-${repo.name || 'report'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2,
@@ -461,5 +487,5 @@ document.getElementById('repoInput').addEventListener('keypress', function(e) {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Code Archaeology initialized');
+    console.log('Repository Insight Engine initialized');
 });

@@ -3,11 +3,15 @@ from flask_cors import CORS
 from archaeologist import CodeArchaeologist
 import os
 import traceback
+import time
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
 archaeologist = CodeArchaeologist()
+
+last_request_time = 0
+min_interval = 2
 
 @app.route('/')
 def serve_frontend():
@@ -15,12 +19,22 @@ def serve_frontend():
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_repo():
+    global last_request_time
+    
     try:
         data = request.json
         repo_url = data.get('repo')
         
         if not repo_url:
             return jsonify({'error': 'Repository URL required'}), 400
+        
+        current_time = time.time()
+        time_since_last = current_time - last_request_time
+        if time_since_last < min_interval:
+            wait_time = min_interval - time_since_last
+            time.sleep(wait_time)
+        
+        last_request_time = time.time()
         
         result = archaeologist.analyze_repository(repo_url)
         cleaned = clean_none_values(result)

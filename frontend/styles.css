@@ -113,18 +113,6 @@ body {
     padding: 40px 0 20px;
 }
 
-.hero-badge {
-    display: inline-block;
-    background: rgba(88, 166, 255, 0.1);
-    border: 1px solid rgba(88, 166, 255, 0.15);
-    border-radius: 20px;
-    padding: 4px 16px;
-    font-size: 12px;
-    font-weight: 500;
-    color: #58a6ff;
-    margin-bottom: 20px;
-}
-
 .hero-title {
     font-size: 44px;
     font-weight: 700;
@@ -315,40 +303,43 @@ body {
     margin-bottom: 16px;
 }
 
-.overall-analysis-content {
-    color: #c9d1d9;
-    line-height: 1.8;
-    font-size: 14px;
-}
-
-.overall-analysis-content h4 {
+.analysis-heading {
     color: #f0f6fc;
     font-size: 15px;
     font-weight: 600;
-    margin: 16px 0 8px 0;
+    margin: 10px 0 4px 0;
 }
 
-.overall-analysis-content p {
-    margin-bottom: 12px;
-}
-
-.overall-analysis-content ul {
+.analysis-list {
     list-style: none;
     padding: 0;
-    margin: 8px 0 16px 0;
+    margin: 4px 0 6px 0;
 }
 
-.overall-analysis-content ul li {
-    padding: 4px 0 4px 20px;
+.analysis-list li {
+    padding: 2px 0 2px 18px;
     position: relative;
     color: #c9d1d9;
+    line-height: 1.5;
+    font-size: 14px;
 }
 
-.overall-analysis-content ul li::before {
+.analysis-list li::before {
     content: "▸";
     position: absolute;
     left: 0;
     color: #58a6ff;
+}
+
+.overall-analysis-content p {
+    color: #c9d1d9;
+    line-height: 1.5;
+    font-size: 14px;
+    margin: 4px 0 6px 0;
+}
+
+.overall-analysis-content {
+    padding: 2px 0;
 }
 
 .decisions-section h2,
@@ -384,7 +375,7 @@ body {
 
 .decision-card .analysis {
     color: #c9d1d9;
-    line-height: 1.8;
+    line-height: 1.6;
     font-size: 14px;
 }
 
@@ -701,10 +692,6 @@ body {
     border-radius: 3px;
 }
 
-.doc-content::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
 .pdf-loading {
     text-align: center;
     padding: 40px 0;
@@ -719,140 +706,6 @@ body {
     color: #484f58;
     font-size: 13px;
     margin-top: 6px;
-}
-
-.pdf-document {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    color: #0d1117;
-    background: white;
-    padding: 40px;
-    max-width: 900px;
-    margin: 0 auto;
-}
-
-.pdf-document .pdf-title {
-    font-size: 26px;
-    font-weight: 700;
-    color: #0d1117;
-    margin-bottom: 4px;
-}
-
-.pdf-document .pdf-subtitle {
-    font-size: 14px;
-    color: #484f58;
-    margin-bottom: 4px;
-}
-
-.pdf-document .pdf-section {
-    margin-top: 28px;
-}
-
-.pdf-document .pdf-section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #0d1117;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #e6edf3;
-}
-
-.pdf-document .pdf-meta {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    background: #f6f8fa;
-    padding: 16px;
-    border-radius: 6px;
-}
-
-.pdf-document .pdf-meta-item {
-    text-align: center;
-}
-
-.pdf-document .pdf-meta-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #484f58;
-    font-weight: 500;
-    letter-spacing: 0.3px;
-}
-
-.pdf-document .pdf-meta-value {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0d1117;
-    margin-top: 2px;
-}
-
-.pdf-document .pdf-decision {
-    background: #f6f8fa;
-    padding: 16px 20px;
-    border-radius: 6px;
-    margin-bottom: 12px;
-    border-left: 4px solid #d29922;
-}
-
-.pdf-document .pdf-decision-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0d1117;
-}
-
-.pdf-document .pdf-decision-path {
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    color: #58a6ff;
-    margin-bottom: 6px;
-}
-
-.pdf-document .pdf-decision-text {
-    font-size: 13px;
-    line-height: 1.7;
-    color: #24292e;
-}
-
-.pdf-document .pdf-commit {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    border-bottom: 1px solid #e6edf3;
-}
-
-.pdf-document .pdf-commit-sha {
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: #58a6ff;
-    font-weight: 600;
-    min-width: 80px;
-}
-
-.pdf-document .pdf-commit-message {
-    flex: 1;
-    font-size: 13px;
-    color: #24292e;
-}
-
-.pdf-document .pdf-commit-intent {
-    font-size: 11px;
-    color: #484f58;
-    background: #e6edf3;
-    padding: 2px 12px;
-    border-radius: 12px;
-}
-
-.pdf-document .pdf-commit-author {
-    font-size: 12px;
-    color: #484f58;
-}
-
-.pdf-document .pdf-footer {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #e6edf3;
-    font-size: 12px;
-    color: #484f58;
-    text-align: center;
 }
 
 .footer {
@@ -939,10 +792,6 @@ body {
     .preview-info-bar {
         flex-direction: column;
         gap: 4px;
-    }
-    
-    .pdf-document .pdf-meta {
-        grid-template-columns: 1fr 1fr;
     }
     
     .footer-content {

@@ -1,64 +1,146 @@
-from google import genai
+import os
 from config import Config
 from github_client import GitHubClient
 import time
+import requests
+import json
 
 class CodeArchaeologist:
     def __init__(self):
         self.gemini_available = False
+        self.groq_available = False
+        
         if Config.GEMINI_API_KEY and Config.GEMINI_API_KEY != '':
             try:
-                self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
+                from google import genai
+                self.gemini_client = genai.Client(api_key=Config.GEMINI_API_KEY)
                 
                 models_to_try = [
-                    'gemini-1.5-flash',
-                    'gemini-1.5-pro',
-                    'gemini-2.0-flash-lite',
-                    'gemini-2.0-flash'
+                    'gemini-2.0-flash',
+                    'gemini-2.0-flash-lite'
                 ]
                 
                 for model_name in models_to_try:
                     try:
-                        test_response = self.client.models.generate_content(
+                        test_response = self.gemini_client.models.generate_content(
                             model=model_name,
                             contents="test"
                         )
-                        self.model = model_name
+                        self.gemini_model = model_name
                         self.gemini_available = True
-                        print(f"Gemini initialized with model: {model_name}")
+                        print(f"Using Gemini model: {model_name}")
                         break
                     except Exception as e:
                         if '429' in str(e):
-                            print(f"Model {model_name} quota exhausted, trying next...")
+                            print(f"Gemini model {model_name} quota exhausted")
                         else:
-                            print(f"Model {model_name} failed: {e}")
+                            print(f"Gemini model {model_name} failed: {e}")
                         continue
                 
                 if not self.gemini_available:
-                    print("No Gemini models with available quota found.")
+                    print("No Gemini models available. Falling back to Groq.")
                     
             except Exception as e:
-                print(f"Gemini client initialization failed: {e}")
+                print(f"Gemini initialization failed: {e}")
+        
+        if not self.gemini_available and Config.GROQ_API_KEY and Config.GROQ_API_KEY != '':
+            try:
+                self.groq_api_key = Config.GROQ_API_KEY
+                self.groq_url = "https://api.groq.com/openai/v1/chat/completions"
+                self.groq_headers = {
+                    "Authorization": f"Bearer {self.groq_api_key}",
+                    "Content-Type": "application/json"
+                }
+                self.groq_model = "llama-3.1-8b-instant"
+                self.groq_available = True
+                print(f"Using Groq model: {self.groq_model}")
+            except Exception as e:
+                print(f"Groq initialization failed: {e}")
+        
+        if not self.gemini_available and not self.groq_available:
+            print("WARNING: No AI models available. Please check your API keys.")
         
         self.github = GitHubClient()
     
-    def _call_with_retry(self, prompt, max_retries=3):
+    def _call_gemini(self, prompt, max_retries=3):
+        if not self.gemini_available:
+            return None
+        
         for attempt in range(max_retries):
             try:
-                response = self.client.models.generate_content(
-                    model=self.model,
+                response = self.gemini_client.models.generate_content(
+                    model=self.gemini_model,
                     contents=prompt
                 )
                 return response.text
             except Exception as e:
                 if '429' in str(e):
                     wait_time = (2 ** attempt) * 5
-                    print(f"Rate limit hit, waiting {wait_time}s... (attempt {attempt+1}/{max_retries})")
+                    print(f"Gemini rate limit, waiting {wait_time}s...")
                     time.sleep(wait_time)
                 else:
-                    return f"Analysis failed: {str(e)}"
+                    return None
         
-        return "Analysis failed: All retry attempts exhausted due to rate limits."
+        return None
+    
+    def _call_groq(self, prompt, max_retries=3):
+        if not self.groq_available:
+            return None
+        
+        payload = {
+            "model": self.groq_model,
+            "messages": [
+                {"role": "system", "content": "You are a senior software engineer analyzing code. Provide professional, technical analysis."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 800,
+            "top_p": 0.95
+        }
+        
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    self.groq_url, 
+                    headers=self.groq_headers, 
+                    json=payload, 
+                    timeout=60
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+                    if content:
+                        print(f"Groq response received (attempt {attempt+1})")
+                        return content
+                    return "Groq returned empty response."
+                elif response.status_code == 429:
+                    wait_time = (2 ** attempt) * 3
+                    print(f"Groq rate limit, waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"Groq error: {response.status_code}")
+                    print(f"Response: {response.text[:200]}")
+                    return f"Groq API error: {response.status_code}"
+            except requests.exceptions.Timeout:
+                print(f"Groq timeout, retrying...")
+                time.sleep(3)
+            except Exception as e:
+                print(f"Groq exception: {str(e)[:100]}")
+                time.sleep(2)
+        
+        return None
+    
+    def _generate(self, prompt):
+        result = self._call_gemini(prompt)
+        if result:
+            return result
+        
+        result = self._call_groq(prompt)
+        if result:
+            return result
+        
+        return "AI analysis unavailable. Please check your API keys or try again later."
     
     def analyze_repository(self, repo_url):
         owner, repo = self.github.extract_repo_info(repo_url)
@@ -156,10 +238,7 @@ class CodeArchaeologist:
                     if file_name.lower() in commit.get('message', '').lower():
                         related_commits.append(commit)
                 
-                if self.gemini_available:
-                    analysis = self._ask_ai_about_file(file_name, file_path, related_commits, metadata)
-                else:
-                    analysis = "AI analysis unavailable. Please check your GEMINI_API_KEY in .env file."
+                analysis = self._ask_ai_about_file(file_name, file_path, related_commits, metadata)
                 
                 decisions.append({
                     'file': file_name,
@@ -183,9 +262,6 @@ class CodeArchaeologist:
         return decisions
     
     def _generate_overall_analysis(self, metadata, decisions, commit_analysis):
-        if not self.gemini_available:
-            return "AI analysis unavailable. Please check your GEMINI_API_KEY in .env file."
-        
         try:
             repo_name = metadata.get('name', 'Unknown')
             description = metadata.get('description', 'No description')
@@ -202,32 +278,39 @@ class CodeArchaeologist:
                 file_summary += f"- {decision.get('file')}\n"
             
             prompt = f"""
-            You are a senior software engineer analyzing a repository. Provide a comprehensive analysis.
+You are a senior software engineer analyzing a repository. Provide a comprehensive analysis with the following structure:
 
-            Repository: {repo_name}
-            Description: {description}
-            Primary Language: {language}
-            Stars: {stars}
-            Forks: {forks}
+[Purpose]
+What problem does this repository solve?
 
-            Recent Commits:
-            {commit_summary}
+[Architecture]
+What architectural patterns are used?
 
-            Key Files:
-            {file_summary}
+[Code Quality]
+What patterns are evident in the code?
 
-            Please provide a structured analysis covering:
+[Technical Decisions]
+What key technical choices were made?
 
-            1. Purpose: What problem does this repository solve?
-            2. Architecture: What architectural patterns are used?
-            3. Code Quality: What patterns are evident in the code?
-            4. Technical Decisions: What key technical choices were made?
-            5. Recommendations: What improvements could be made?
+[Recommendations]
+What improvements could be made?
 
-            Keep it concise, professional, and technical.
-            """
+Repository: {repo_name}
+Description: {description}
+Primary Language: {language}
+Stars: {stars}
+Forks: {forks}
+
+Recent Commits:
+{commit_summary}
+
+Key Files:
+{file_summary}
+
+Provide a detailed, professional analysis. Use clear section headings.
+"""
             
-            return self._call_with_retry(prompt)
+            return self._generate(prompt)
         except Exception as e:
             return f"Overall analysis failed: {str(e)}"
     
@@ -241,25 +324,22 @@ class CodeArchaeologist:
                 commit_summary = "No direct commit history found for this file."
             
             prompt = f"""
-            You are analyzing a code file to understand WHY it exists and what decisions led to it.
+You are analyzing a code file. Provide a concise summary in 4-5 lines.
+
+File: {file_name}
+Path: {file_path}
+Repository: {metadata.get('name', 'Unknown')}
+Related commit history:
+{commit_summary}
+
+Provide a brief summary covering:
+- What this file does
+- Its role in the project
+- Any important patterns or decisions
+
+Keep it short, professional, and technical. Maximum 4-5 sentences. Do not use asterisks or markdown formatting.
+"""
             
-            Repository: {metadata.get('name', 'Unknown')}
-            File: {file_name}
-            Path: {file_path}
-            Related commit history:
-            {commit_summary}
-            
-            Provide a detailed analysis covering:
-            
-            1. Purpose: What problem does this file solve?
-            2. Architecture: What role does it play in the overall system?
-            3. Decision Context: Why was this approach chosen?
-            4. Trade-offs: What alternatives were likely considered?
-            5. Dependencies: What does this file depend on?
-            
-            Keep it concise, professional, and technical.
-            """
-            
-            return self._call_with_retry(prompt)
+            return self._generate(prompt)
         except Exception as e:
             return f"Analysis failed: {str(e)}"
